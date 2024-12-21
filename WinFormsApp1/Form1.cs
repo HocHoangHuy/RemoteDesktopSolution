@@ -1,5 +1,6 @@
 using System.Drawing.Imaging;
 using System.Net.Sockets;
+using System.Text;
 
 namespace WinFormsApp1
 {
@@ -38,6 +39,11 @@ namespace WinFormsApp1
                 listener.Start();
                 TcpClient client = listener.AcceptTcpClient();
                 NetworkStream stream = client.GetStream();
+
+                using(BinaryWriter writer = new(stream, Encoding.UTF8))
+                {
+                    writer.Write(Environment.MachineName);
+                }
 
                 while (_isStreaming)
                 {

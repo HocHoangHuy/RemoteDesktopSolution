@@ -50,8 +50,13 @@ namespace RemoteDesktopProject
         {
             try
             {
-                _client = new TcpClient("SenderPC_IP", 5000);
+                _client = new TcpClient("192.168.201.10", 8888);
                 NetworkStream stream = _client.GetStream();
+
+                using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8))
+                {
+                    textBox_DeviceName.Text = reader.ReadString();
+                }
 
                 while (_isReceiving)
                 {
