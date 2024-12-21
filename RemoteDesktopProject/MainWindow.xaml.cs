@@ -55,7 +55,11 @@ namespace RemoteDesktopProject
 
                 using (BinaryReader reader = new BinaryReader(stream, Encoding.UTF8))
                 {
-                    textBox_DeviceName.Text = reader.ReadString();
+                    string deviceName = reader.ReadString();
+                    Dispatcher.InvokeAsync(() =>{
+                        textBox_DeviceName.Text = deviceName;
+                    });
+                    
                 }
 
                 while (_isReceiving)

@@ -44,7 +44,7 @@ namespace WinFormsApp1
                 this.Invoke(() => { Enabled = true; });
                 NetworkStream stream = client.GetStream();
 
-                using(BinaryWriter writer = new(stream, Encoding.UTF8))
+                using(BinaryWriter writer = new(stream, Encoding.UTF8, true))
                 {
                     writer.Write(Environment.MachineName);
                 }
