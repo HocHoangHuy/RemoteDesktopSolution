@@ -35,14 +35,14 @@ namespace RemoteDesktopProject
                 _isReceiving = false;
                 receiverThread!.Join();
                 _client?.Close();
-                button_Share.Content = "Share";
+                button_Connect.Content = "Connect";
             }
             else
             {
                 _isReceiving = true;
                 receiverThread = new Thread(ReceiveScreen);
                 receiverThread.Start();
-                button_Share.Content = "Stop";
+                button_Connect.Content = "Stop";
             }
         }
 

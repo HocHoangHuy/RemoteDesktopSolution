@@ -19,7 +19,7 @@
             <Border BorderThickness="2" Padding="1" BorderBrush="Black" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <TextBlock x:Name="textBox_DeviceName" d:Text="MyPC ABC" HorizontalAlignment="Left" VerticalAlignment="Top" Padding="5, 0, 5, 0" />
             </Border>
-            <Button x:Name="button_Share" Grid.Column="1" Content="Share" Click="button_Share_Click" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            <Button x:Name="button_Connect" Grid.Column="1" Content="Connect" Click="button_Share_Click" HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center"/>
         </Grid>
         <Border Grid.Row="1" BorderThickness="1" BorderBrush="Black">
             <Image x:Name="image_Screen" Stretch="Uniform"/>

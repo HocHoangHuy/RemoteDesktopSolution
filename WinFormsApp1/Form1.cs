@@ -12,7 +12,7 @@ namespace WinFormsApp1
         public Form1()
         {
             InitializeComponent();
-            button_Connect.Text = "Connect";
+            button_Connect.Text = "Share";
         }
 
         private void button_Connect_Click(object sender, EventArgs e)
@@ -22,12 +22,14 @@ namespace WinFormsApp1
                 _isStreaming = false;
                 _streamThread?.Join();
                 _previousFrame?.Dispose();
+                button_Connect.Text = "Share";
             }
             else
             {
                 _isStreaming = true;
                 _streamThread = new Thread(StreamScreen);
                 _streamThread.Start();
+                button_Connect.Text = "Stop";
             }
         }
 
@@ -37,7 +39,9 @@ namespace WinFormsApp1
             {
                 TcpListener listener = new TcpListener(System.Net.IPAddress.Any, 8888);
                 listener.Start();
+                this.Invoke(() => { Enabled = false; });
                 TcpClient client = listener.AcceptTcpClient();
+                this.Invoke(() => { Enabled = true; });
                 NetworkStream stream = client.GetStream();
 
                 using(BinaryWriter writer = new(stream, Encoding.UTF8))
