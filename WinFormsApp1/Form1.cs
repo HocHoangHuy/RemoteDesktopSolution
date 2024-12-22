@@ -1,4 +1,5 @@
 using System.Drawing.Imaging;
+using System.IO;
 using System.Net.Sockets;
 using System.Text;
 
@@ -22,6 +23,7 @@ namespace WinFormsApp1
                 _isStreaming = false;
                 _streamThread?.Join();
                 _previousFrame?.Dispose();
+                _previousFrame = null;
                 button_Connect.Text = "Share";
             }
             else
@@ -35,9 +37,10 @@ namespace WinFormsApp1
 
         private void StreamScreen()
         {
+            TcpListener listener = new TcpListener(System.Net.IPAddress.Any, 8888);
+            
             try
             {
-                TcpListener listener = new TcpListener(System.Net.IPAddress.Any, 8888);
                 listener.Start();
                 this.Invoke(() => { Enabled = false; });
                 TcpClient client = listener.AcceptTcpClient();
@@ -65,16 +68,19 @@ namespace WinFormsApp1
                     }
 
                     currentFrame.Dispose();
-                    Thread.Sleep(50); // Limit frame rate
+                    Thread.Sleep(30); // Limit frame rate
                 }
 
                 stream.Close();
                 client.Close();
-                listener.Stop();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}");
+            }
+            finally
+            {
+                listener.Stop();
             }
         }
 
@@ -115,11 +121,8 @@ namespace WinFormsApp1
                 {
                     if (currentFrame.GetPixel(x, y) != previousFrame.GetPixel(x, y))
                     {
-                        Rectangle dirtyRegion = new Rectangle(x, y, 1, 1); // Minimal region size
-                        using (Bitmap dirtyBitmap = currentFrame.Clone(dirtyRegion, currentFrame.PixelFormat))
-                        {
-                            SendFullFrame(dirtyBitmap, stream);
-                        }
+                        SendFullFrame(currentFrame, stream);
+                        return;
                     }
                 }
             }
