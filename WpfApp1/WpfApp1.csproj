@@ -5,8 +5,8 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>False</UseWPF>
-    <UseWindowsForms>True</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,10 +27,6 @@
       <Lcid>0</Lcid>
       <Isolated>false</Isolated>
     </COMReference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Management" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
