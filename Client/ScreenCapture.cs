@@ -50,6 +50,13 @@ public class ScreenCapture
         duplicatedOutput = _output1.DuplicateOutput(_device);
     }
 
+    public Size GetScreenSize()
+    {
+        // Get the screen size of the primary monitor
+        var outputDescription = _output1.Description.DesktopBounds;
+        return new Size(outputDescription.Right, outputDescription.Bottom);
+    }
+
     // Method that returns a Bitmap object of the current screen capture
     public Bitmap GetCapturedFrame()
     {

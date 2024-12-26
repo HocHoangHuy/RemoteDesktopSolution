@@ -5,6 +5,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -24,11 +25,14 @@ namespace Server
     /// </summary>
     public partial class MainWindow : Window
     {
+        TcpClient server = null;
+        int FrameCount = 0;
         Thread captureScreen;
         public MainWindow()
         {
             InitializeComponent();
             this.Loaded += (s, e) => { captureScreen = StartReceiving(); };
+
             //this.Loaded += (s, e) => { captureScreen = StartCaptureScreen(); };
             //ScreenStateLogger screenStateLogger = new();
             //screenStateLogger.ScreenRefreshed += (s, e) => { image_Screen.Dispatcher.Invoke(() => ChangeSource(e)); };
@@ -39,23 +43,21 @@ namespace Server
         {
             Thread screenCapturing = new Thread(() =>
             {
-                TcpClient server = new TcpClient();
-                //server.Connect("192.168.201.10", 8888);
+                server = new TcpClient();
                 server.Connect("192.168.112.111", 8888);
-                server.ReceiveBufferSize = 65536;
                 NetworkStream networkStream = server.GetStream();
                 while (Thread.CurrentThread.IsAlive || server.Connected)
                 {
-                    byte[] lengthBytes = new byte[4];
-                    networkStream.Read(lengthBytes, 0, 4);
-                    int ByteLength = BitConverter.ToInt32(lengthBytes);
+                    byte[] byteLengthBuffer = new byte[4];
+                    networkStream.ReadExactly(byteLengthBuffer, 0, 4);
+                    int ByteLength = BitConverter.ToInt32(byteLengthBuffer);
                     byte[] buffer = new byte[ByteLength];
-                    networkStream.Read(buffer, 0, ByteLength);
+                    networkStream.ReadExactly(buffer, 0, ByteLength);
                     image_Screen.Dispatcher.Invoke(() =>
                     {
                         ChangeSource(buffer);
                     }, System.Windows.Threading.DispatcherPriority.Normal);
-                    Thread.Sleep(1000 / 30);
+                    //Thread.Sleep(1000 / 30);
                 }
             });
             screenCapturing.Name = "Receiving images";
@@ -111,5 +113,15 @@ namespace Server
             bitmapImage.EndInit();
             image_Screen.Source = bitmapImage;
         }
+
+        private void image_Screen_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            System.Windows.Point clickPoint = e.GetPosition(image_Screen);
+            NetworkStream ns = server.GetStream();
+            ns.WriteByte(1);
+            ns.Write(BitConverter.GetBytes(clickPoint.X/image_Screen.ActualWidth));
+            ns.Write(BitConverter.GetBytes(clickPoint.Y/image_Screen.ActualHeight));
+        }
+
     }
 }
