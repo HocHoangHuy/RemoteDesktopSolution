@@ -25,13 +25,13 @@ namespace Server
     /// </summary>
     public partial class MainWindow : Window
     {
-        TcpClient server = null;
+        TcpClient server = null, mouse = null;
+
         int FrameCount = 0;
-        Thread captureScreen;
         public MainWindow()
         {
             InitializeComponent();
-            this.Loaded += (s, e) => { captureScreen = StartReceiving(); };
+            this.Loaded += (s, e) => { StartReceiving(); };
 
             //this.Loaded += (s, e) => { captureScreen = StartCaptureScreen(); };
             //ScreenStateLogger screenStateLogger = new();
@@ -39,10 +39,11 @@ namespace Server
             //screenStateLogger.Start();
         }
 
-        private Thread StartReceiving()
+        private Task StartReceiving()
         {
-            Thread screenCapturing = new Thread(() =>
+            Task screenCapturing = new Task(() =>
             {
+                Thread.CurrentThread.Name = "Receiving images";
                 server = new TcpClient();
                 server.Connect("192.168.112.111", 8888);
                 NetworkStream networkStream = server.GetStream();
@@ -60,8 +61,8 @@ namespace Server
                     //Thread.Sleep(1000 / 30);
                 }
             });
-            screenCapturing.Name = "Receiving images";
             screenCapturing.Start();
+            mouse = new("192.168.112.111", 8889);
             return screenCapturing;
 
         }
@@ -114,10 +115,18 @@ namespace Server
             image_Screen.Source = bitmapImage;
         }
 
+        private void image_Screen_MouseMove(object sender, MouseEventArgs e)
+        {
+            System.Windows.Point mousePosition = e.GetPosition(image_Screen);
+            mousePosition.X /= image_Screen.ActualWidth;
+            mousePosition.Y /= image_Screen.ActualHeight;
+
+        }
+
         private void image_Screen_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             System.Windows.Point clickPoint = e.GetPosition(image_Screen);
-            NetworkStream ns = server.GetStream();
+            NetworkStream ns = mouse.GetStream();
             ns.WriteByte(1);
             ns.Write(BitConverter.GetBytes(clickPoint.X/image_Screen.ActualWidth));
             ns.Write(BitConverter.GetBytes(clickPoint.Y/image_Screen.ActualHeight));
