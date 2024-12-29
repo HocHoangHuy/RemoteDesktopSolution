@@ -32,7 +32,7 @@ namespace Server
         {
             InitializeComponent();
             this.Loaded += (s, e) => { StartReceiving(); };
-
+            mouse = new("192.168.112.111", 8889);
             //this.Loaded += (s, e) => { captureScreen = StartCaptureScreen(); };
             //ScreenStateLogger screenStateLogger = new();
             //screenStateLogger.ScreenRefreshed += (s, e) => { image_Screen.Dispatcher.Invoke(() => ChangeSource(e)); };
@@ -62,7 +62,6 @@ namespace Server
                 }
             });
             screenCapturing.Start();
-            mouse = new("192.168.112.111", 8889);
             return screenCapturing;
 
         }
@@ -120,16 +119,36 @@ namespace Server
             System.Windows.Point mousePosition = e.GetPosition(image_Screen);
             mousePosition.X /= image_Screen.ActualWidth;
             mousePosition.Y /= image_Screen.ActualHeight;
+            BinaryWriter binaryWriter = new BinaryWriter(mouse.GetStream(), Encoding.UTF8, true);
+            binaryWriter.Write((byte)1);
+            binaryWriter.Write(mousePosition.X);
+            binaryWriter.Write(mousePosition.Y);
+        }
 
+        private void image_Screen_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            mouse.GetStream().WriteByte(3);
         }
 
         private void image_Screen_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            System.Windows.Point clickPoint = e.GetPosition(image_Screen);
-            NetworkStream ns = mouse.GetStream();
-            ns.WriteByte(1);
-            ns.Write(BitConverter.GetBytes(clickPoint.X/image_Screen.ActualWidth));
-            ns.Write(BitConverter.GetBytes(clickPoint.Y/image_Screen.ActualHeight));
+            mouse.GetStream().WriteByte(2);
+        }
+
+        private void image_Screen_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            mouse.GetStream().WriteByte(4);
+        }
+
+        private void image_Screen_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            mouse.GetStream().WriteByte(8);
+            mouse.GetStream().Write(BitConverter.GetBytes(e.Delta / 120));            
+        }
+
+        private void image_Screen_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            mouse.GetStream().WriteByte(3);
         }
 
     }

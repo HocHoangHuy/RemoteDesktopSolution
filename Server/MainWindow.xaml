@@ -8,7 +8,11 @@
         Title="MainWindow">
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch" x:Name="grid_ImageContainer" Margin="0,0,0,0">
         <Image x:Name="image_Screen" Stretch="Uniform" Source="/Screenshot (38).png"
-                MouseLeftButtonDown="image_Screen_MouseLeftButtonDown"
-               MouseMove="image_Screen_MouseMove"/>
+               MouseLeftButtonDown="image_Screen_MouseLeftButtonDown"
+               MouseMove="image_Screen_MouseMove"
+               MouseLeftButtonUp="image_Screen_MouseLeftButtonUp"
+               MouseRightButtonDown="image_Screen_MouseRightButtonDown"
+               MouseRightButtonUp="image_Screen_MouseRightButtonUp"
+               MouseWheel="image_Screen_MouseWheel"/>
     </Grid>
 </Window>

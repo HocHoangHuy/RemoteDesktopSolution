@@ -166,13 +166,14 @@ public partial class Program
                 if (e.InnerException is SocketException)
                     tcpClient.Close();
             }
-        });
+        }, TaskCreationOptions.LongRunning);
         receiveMouse.Start();
 
     }
 
     public static void Main()
     {
+        StartCaptureScreen();
         //TcpListener tcpListener = new TcpListener(System.Net.IPAddress.Any, 8888);
         //tcpListener.Start();
         //while (true)
@@ -182,13 +183,15 @@ public partial class Program
         //}
 
         //SetCursorPos(1280, 720);
-        double x_percent = 0, y_percent = 0;
-        SetCursorPos(1270, 700);
-        for (int i = 0; i <= 100; i++)
-        {
-            mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)(i * 65535/100 ), (uint)(i * 65535/100), 0, UIntPtr.Zero);
-            Thread.Sleep(1);
-        }
+        //double x_percent = 0, y_percent = 0;
+        //SetCursorPos(1270, 700);
+        //for (int i = 0; i <= 100; i++)
+        //{
+        //    mouse_event(MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE, (uint)(i * 65535/100 ), (uint)(i * 65535/100), 0, UIntPtr.Zero);
+        //    Thread.Sleep(1);
+        //}
+
+
 
     }
 
