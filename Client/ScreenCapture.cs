@@ -292,8 +292,6 @@ public class ScreenCapture
         return bitmap;
     }
 
-    public (int andMaskSize, int xorMaskSize) CalculateMasks()
-
     public (int width, int height) AdjustDimensionsToFitBufferSize(int bufferSize)
     {
         // Try different potential widths and heights
