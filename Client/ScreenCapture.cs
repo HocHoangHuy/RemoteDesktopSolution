@@ -220,66 +220,101 @@ public class ScreenCapture
         }
     }
 
-    private static Bitmap ConvertMaskedToBitmap(byte[] buffer, int width, int height)
-{
-    // Create a bitmap to hold the final result
-    Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-
-    // Step 1: Create a graphics object to manipulate the bitmap
-    using (Graphics g = Graphics.FromImage(bitmap))
+    private Bitmap ConvertMaskedToBitmap(byte[] buffer, int width, int height)
     {
-        // Clear the bitmap with a transparent color
-        g.Clear(System.Drawing.Color.Transparent);
+        // Create a bitmap to hold the final result
+        Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
-        // Step 2: Extract AND mask (binary) and XOR mask (color)
-        // Assuming buffer contains the combined AND and XOR mask data
-        int andMaskSize = (width * height + 7) / 8; // Size of the AND mask
-        int xorMaskSize = (width * height * 4); // Size of the XOR mask (32-bit color for each pixel)
-
-        byte[] andMask = new byte[andMaskSize];
-        byte[] xorMask = new byte[xorMaskSize];
-
-        // Copy the AND and XOR mask data from the buffer
-        Array.Copy(buffer, 0, andMask, 0, andMaskSize);      // First part is the AND mask
-        Array.Copy(buffer, andMaskSize, xorMask, 0, xorMaskSize);  // Next part is the XOR mask
-
-        // Step 3: Process the AND mask and XOR mask to create the final bitmap
-
-        int byteIndex = 0;
-        for (int y = 0; y < height; y++)
+        // Step 1: Create a graphics object to manipulate the bitmap
+        using (Graphics g = Graphics.FromImage(bitmap))
         {
-            for (int x = 0; x < width; x++)
+            // Clear the bitmap with a transparent color
+            g.Clear(System.Drawing.Color.Transparent);
+
+            // Step 2: Extract AND mask (binary) and XOR mask (color)
+            // Assuming buffer contains the combined AND and XOR mask data
+            int andMaskSize = (width * height + 7) / 8; // Size of the AND mask
+            int xorMaskSize = (width * height * 4); // Size of the XOR mask (32-bit color for each pixel)
+
+            if (andMaskSize + xorMaskSize != buffer.Length)
             {
-                // Get the corresponding bit in the AND mask
-                int bitIndex = (y * width) + x;
-                int bytePos = bitIndex / 8;
-                int bitPos = bitIndex % 8;
-                bool isOpaque = (andMask[bytePos] & (1 << (7 - bitPos))) != 0;
+                var adjustedSize = AdjustDimensionsToFitBufferSize(buffer.Length);
+                width = adjustedSize.width;
+                height = adjustedSize.height;
+                andMaskSize = (width * height + 7) / 8;
+                xorMaskSize = (width * height * 4);
+            }
 
-                // Get the corresponding color in the XOR mask (ARGB)
-                int colorPos = (y * width + x) * 4;
-                byte blue = xorMask[colorPos];
-                byte green = xorMask[colorPos + 1];
-                byte red = xorMask[colorPos + 2];
-                byte alpha = xorMask[colorPos + 3];
+            byte[] andMask = new byte[andMaskSize];
+            byte[] xorMask = new byte[xorMaskSize];
 
-                // If the AND mask indicates the cursor is visible, use the XOR mask for color
-                if (isOpaque)
+            // Copy the AND and XOR mask data from the buffer
+            Array.Copy(buffer, 0, andMask, 0, andMaskSize);      // First part is the AND mask
+            Array.Copy(buffer, andMaskSize, xorMask, 0, xorMaskSize);  // Next part is the XOR mask
+
+            // Step 3: Process the AND mask and XOR mask to create the final bitmap
+
+            int byteIndex = 0;
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
                 {
-                    System.Drawing.Color color = System.Drawing.Color.FromArgb(alpha, red, green, blue);
-                    bitmap.SetPixel(x, y, color);
-                }
-                else
-                {
-                    // The pixel is transparent (due to AND mask), set to transparent
-                    bitmap.SetPixel(x, y, System.Drawing.Color.Transparent);
+                    // Get the corresponding bit in the AND mask
+                    int bitIndex = (y * width) + x;
+                    int bytePos = bitIndex / 8;
+                    int bitPos = bitIndex % 8;
+                    bool isOpaque = (andMask[bytePos] & (1 << (7 - bitPos))) != 0;
+
+                    // Get the corresponding color in the XOR mask (ARGB)
+                    int colorPos = (y * width + x) * 4;
+                    byte blue = xorMask[colorPos];
+                    byte green = xorMask[colorPos + 1];
+                    byte red = xorMask[colorPos + 2];
+                    byte alpha = xorMask[colorPos + 3];
+
+                    // If the AND mask indicates the cursor is visible, use the XOR mask for color
+                    if (isOpaque)
+                    {
+                        System.Drawing.Color color = System.Drawing.Color.FromArgb(alpha, red, green, blue);
+                        bitmap.SetPixel(x, y, color);
+                    }
+                    else
+                    {
+                        // The pixel is transparent (due to AND mask), set to transparent
+                        bitmap.SetPixel(x, y, System.Drawing.Color.Transparent);
+                    }
                 }
             }
         }
+
+        return bitmap;
     }
 
-    return bitmap;
-}
+    public (int width, int height) AdjustDimensionsToFitBufferSize(int bufferSize)
+    {
+        // Try different potential widths and heights
+        for (int width = 1; width <= 256; width++) // Adjust the range based on expected cursor size
+        {
+            for (int height = 1; height <= 256; height++)
+            {
+                // Calculate the size of the AND and XOR masks
+                int andMaskSize = (width * height + 7) / 8;  // AND mask size in bytes
+                int xorMaskSize = width * height * 4;        // XOR mask size in bytes (32-bit ARGB)
+
+                // Total buffer size
+                int totalSize = andMaskSize + xorMaskSize;
+
+                // If the total buffer size matches the provided buffer size, return the dimensions
+                if (totalSize == bufferSize)
+                {
+                    return (width, height); // Found matching width and height
+                }
+            }
+        }
+
+        // If no matching dimensions are found, return an indication (e.g., -1 for width and height)
+        return (-1, -1); // Return an invalid dimension pair if no match is found
+    }
 }
 
 
