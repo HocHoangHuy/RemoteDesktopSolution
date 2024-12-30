@@ -13,6 +13,6 @@
                MouseLeftButtonUp="image_Screen_MouseLeftButtonUp"
                MouseRightButtonDown="image_Screen_MouseRightButtonDown"
                MouseRightButtonUp="image_Screen_MouseRightButtonUp"
-               MouseWheel="image_Screen_MouseWheel"/>
+               MouseWheel="image_Screen_MouseWheel" Cursor="None"/>
     </Grid>
 </Window>
