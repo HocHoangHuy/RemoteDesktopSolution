@@ -168,7 +168,7 @@ public partial class Program
             }
         }, TaskCreationOptions.LongRunning);
         receiveMouse.Start();
-
+        Task.WaitAll(receiveMouse, captureScreen);
     }
 
     public static void Main()

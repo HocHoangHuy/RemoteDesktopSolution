@@ -9,6 +9,8 @@ using SharpDX.Direct3D11;
 using SharpDX.Mathematics.Interop;
 using System.Runtime.InteropServices;
 using Device = SharpDX.Direct3D11.Device;
+using static System.Net.Mime.MediaTypeNames;
+using System.Collections;
 
 public class ScreenCapture
 {
@@ -83,10 +85,76 @@ public class ScreenCapture
 
                 // Convert the texture to Bitmap and return it
                 Bitmap bitmap = TextureToBitmap(mapSource.DataPointer, _screenTexture.Description.Width, _screenTexture.Description.Height);
+                // Process cursor (mouse pointer)
+                if (duplicateFrameInformation.PointerShapeBufferSize > 0)
+                {
+                    byte[] pointerShapeBuffer = new byte[duplicateFrameInformation.PointerShapeBufferSize];
+                    OutputDuplicatePointerShapeInformation pointerInfo;
+
+                    GCHandle handle = GCHandle.Alloc(pointerShapeBuffer, GCHandleType.Pinned);
+                    IntPtr pointerShapeBufferRef;
+                    try
+                    {
+                        // Get the pointer to the array
+                        pointerShapeBufferRef = handle.AddrOfPinnedObject();
+                    }
+                    finally
+                    {
+                        // Free the handle when done
+                        handle.Free();
+                    }
+
+                    duplicatedOutput.GetFramePointerShape(pointerShapeBuffer.Length, pointerShapeBufferRef, out int pointerShapeBufferRequired ,  out pointerInfo);
+
+                    using (var graphics = Graphics.FromImage(bitmap))
+                    {
+                        // Convert pointer shape buffer to an image (example assumes monochrome bitmap)
+                        if (pointerInfo.Type == (int)OutputDuplicatePointerShapeType.Monochrome)
+                        {
+                            var cursorWidth = pointerInfo.Width;
+                            var cursorHeight = pointerInfo.Height; // Monochrome has two halves
+                            var hotspotX = pointerInfo.HotSpot.X;
+                            var hotspotY = pointerInfo.HotSpot.Y;
+
+                            using (var cursorBitmap = new Bitmap(cursorWidth, cursorHeight, PixelFormat.Format32bppArgb))
+                            {
+                                var cursorData = cursorBitmap.LockBits(
+                                    new System.Drawing.Rectangle(0, 0, cursorWidth, cursorHeight),
+                                    ImageLockMode.WriteOnly,
+                                    PixelFormat.Format32bppArgb);
+
+                                
+                                for (int y = 0; y < cursorHeight; y++)
+                                {
+                                    for (int x = 0; x < cursorWidth; x++)
+                                    {
+                                        // Extract monochrome mask and XOR pattern to calculate pixel color
+                                        int byteIndex = y * ((cursorWidth + 7) / 8) + (x / 8);
+                                        bool isWhite = (pointerShapeBuffer[byteIndex] & (0x80 >> (x % 8))) != 0;
+
+                                        bitmap.SetPixel(x, y, isWhite ? System.Drawing.Color.White : System.Drawing.Color.Black);
+                                    }
+                                }
+
+                                cursorBitmap.UnlockBits(cursorData);
+
+                                // Draw the cursor on the bitmap
+                                graphics.DrawImage(
+                                    cursorBitmap,
+                                    duplicateFrameInformation.PointerPosition.Position.X,
+                                    duplicateFrameInformation.PointerPosition.Position.Y);
+                            }
+                        }
+                    }
+                }
+
+
                 // Release resources
                 _device.ImmediateContext.UnmapSubresource(_screenTexture, 0);
                 duplicatedOutput.ReleaseFrame();
                 screenResource.Dispose();
+
+                
 
                 return bitmap;  // Return the captured bitmap
 

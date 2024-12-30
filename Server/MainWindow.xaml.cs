@@ -32,7 +32,7 @@ namespace Server
         {
             InitializeComponent();
             this.Loaded += (s, e) => { StartReceiving(); };
-            mouse = new("192.168.112.111", 8889);
+            mouse = new("192.168.201.10", 8889);
             //this.Loaded += (s, e) => { captureScreen = StartCaptureScreen(); };
             //ScreenStateLogger screenStateLogger = new();
             //screenStateLogger.ScreenRefreshed += (s, e) => { image_Screen.Dispatcher.Invoke(() => ChangeSource(e)); };
@@ -45,7 +45,7 @@ namespace Server
             {
                 Thread.CurrentThread.Name = "Receiving images";
                 server = new TcpClient();
-                server.Connect("192.168.112.111", 8888);
+                server.Connect("192.168.201.10", 8888);
                 NetworkStream networkStream = server.GetStream();
                 while (Thread.CurrentThread.IsAlive || server.Connected)
                 {
