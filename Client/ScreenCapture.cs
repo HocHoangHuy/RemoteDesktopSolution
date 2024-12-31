@@ -233,7 +233,7 @@ public class ScreenCapture
                     cursorBitmap = ConvertColorPointerToBitmap(pointerShapeBuffer, cursorWidth, cursorHeight);
                     break;
                 case (int)OutputDuplicatePointerShapeType.MaskedColor:
-                    cursorBitmap = ConvertMaskedToBitmap(pointerShapeBuffer, cursorWidth, cursorHeight);
+                    cursorBitmap = ConvertMaskedToBitmap(pointerShapeInformation, pointerShapeBuffer);
                     break;
                 default: return;
             }
@@ -315,7 +315,7 @@ public class ScreenCapture
         return bitmap;
     }
 
-    public Bitmap ConvertMaskedCursorToBitmap(OutputDuplicatePointerShapeInformation pointerShapeInfo, byte[] pointerShapeBuffer)
+    public Bitmap ConvertMaskedToBitmap(OutputDuplicatePointerShapeInformation pointerShapeInfo, byte[] pointerShapeBuffer)
     {
         int width = pointerShapeInfo.Width;
         int height = pointerShapeInfo.Height;
