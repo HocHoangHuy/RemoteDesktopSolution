@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Device = SharpDX.Direct3D11.Device;
 using static System.Net.Mime.MediaTypeNames;
 using System.Collections;
+using System.Diagnostics;
 
 public class ScreenCapture
 {
@@ -21,6 +22,8 @@ public class ScreenCapture
     private bool _capturing = true;
     private OutputDuplication duplicatedOutput;
     private byte[] pointerShapeBuffer;
+    private OutputDuplicatePointerShapeInformation? pointerInfo;
+    private RawPoint pointerTopLeftPosition, pointerHotspot;
 
     public ScreenCapture()
     {
@@ -52,6 +55,11 @@ public class ScreenCapture
         _screenTexture = new Texture2D(_device, textureDesc);
         duplicatedOutput = _output1.DuplicateOutput(_device);
         pointerShapeBuffer = Array.Empty<byte>();
+        while(true)
+        {
+            if (!GetCursorPos(out pointerHotspot)) continue; else break;
+        }
+        pointerTopLeftPosition = new RawPoint(0, 0);
     }
 
     public Size GetScreenSize()
@@ -61,11 +69,13 @@ public class ScreenCapture
         return new Size(outputDescription.Right, outputDescription.Bottom);
     }
 
+    [DllImport("user32.dll")]
+    public static extern bool GetCursorPos(out RawPoint lpPoint);
+
     // Method that returns a Bitmap object of the current screen capture
     public Bitmap GetCapturedFrame()
     {
         // Use Task to capture screen continuously in a separate thread
-
         {
             try
             {
@@ -91,25 +101,33 @@ public class ScreenCapture
                 if (duplicateFrameInformation.PointerShapeBufferSize > 0)
                 {
                     pointerShapeBuffer = new byte[duplicateFrameInformation.PointerShapeBufferSize];
+                    GCHandle handle = GCHandle.Alloc(pointerShapeBuffer, GCHandleType.Pinned);
+                    IntPtr pointerShapeBufferRef;
+                    try
+                    {
+                        // Get the pointer to the array
+                        pointerShapeBufferRef = handle.AddrOfPinnedObject();
+                    }
+                    finally
+                    {
+                        // Free the handle when done
+                        handle.Free();
+                    }
+                    OutputDuplicatePointerShapeInformation _pointerInfo;
+                    duplicatedOutput.GetFramePointerShape(pointerShapeBuffer.Length, pointerShapeBufferRef, out int pointerShapeBufferRequired, out _pointerInfo);
+                    pointerInfo = _pointerInfo;
                 }
 
-                OutputDuplicatePointerShapeInformation pointerInfo;
+                RawPoint newCursorPos;
+                GetCursorPos(out newCursorPos);
 
-                GCHandle handle = GCHandle.Alloc(pointerShapeBuffer, GCHandleType.Pinned);
-                IntPtr pointerShapeBufferRef;
-                try
+                if (!newCursorPos.Equals(pointerHotspot))
                 {
-                    // Get the pointer to the array
-                    pointerShapeBufferRef = handle.AddrOfPinnedObject();
+                    pointerTopLeftPosition = duplicateFrameInformation.PointerPosition.Position;
+                    pointerHotspot = newCursorPos;
                 }
-                finally
-                {
-                    // Free the handle when done
-                    handle.Free();
-                }
-
-                duplicatedOutput.GetFramePointerShape(pointerShapeBuffer.Length, pointerShapeBufferRef, out int pointerShapeBufferRequired, out pointerInfo);
-                DrawCursorOnBitmap(bitmap, pointerInfo, duplicateFrameInformation.PointerPosition.Position, pointerShapeBuffer);
+                if (pointerInfo != null)
+                DrawCursorOnBitmap(bitmap, pointerInfo.Value, pointerTopLeftPosition, pointerShapeBuffer);
 
 
                 // Release resources
@@ -203,6 +221,8 @@ public class ScreenCapture
             var hotspotX = pointerShapeInformation.HotSpot.X;
             var hotspotY = pointerShapeInformation.HotSpot.Y;
             Bitmap cursorBitmap;
+            //Task.Delay(5000);
+            //Debugger.Break();
             // Convert pointer shape buffer to an image (example assumes monochrome bitmap)
             switch (pointerShapeInformation.Type)
             {
@@ -255,7 +275,7 @@ public class ScreenCapture
             Array.Copy(buffer, andMaskSize, xorMask, 0, xorMaskSize);  // Next part is the XOR mask
 
             // Step 3: Process the AND mask and XOR mask to create the final bitmap
-
+            BitmapData lockedBits = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             int byteIndex = 0;
             for (int y = 0; y < height; y++)
             {
@@ -287,10 +307,14 @@ public class ScreenCapture
                     }
                 }
             }
+            bitmap.UnlockBits(lockedBits);
         }
+
+        bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
 
         return bitmap;
     }
+
 
     public (int width, int height) AdjustDimensionsToFitBufferSize(int bufferSize)
     {
