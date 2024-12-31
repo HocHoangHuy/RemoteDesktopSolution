@@ -275,7 +275,7 @@ public class ScreenCapture
             Array.Copy(buffer, andMaskSize, xorMask, 0, xorMaskSize);  // Next part is the XOR mask
 
             // Step 3: Process the AND mask and XOR mask to create the final bitmap
-            BitmapData lockedBits = bitmap.LockBits(new(0, 0, width, height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            BitmapData lockedBits = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             int byteIndex = 0;
             for (int y = 0; y < height; y++)
             {
@@ -311,6 +311,59 @@ public class ScreenCapture
         }
 
         bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
+
+        return bitmap;
+    }
+
+    public Bitmap ConvertMaskedCursorToBitmap(OutputDuplicatePointerShapeInformation pointerShapeInfo, byte[] pointerShapeBuffer)
+    {
+        int width = pointerShapeInfo.Width;
+        int height = pointerShapeInfo.Height;
+        int pitch = pointerShapeInfo.Pitch;
+
+        // Create a bitmap to store the cursor
+        Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+
+        // Lock the bitmap for fast pixel manipulation
+        BitmapData bitmapData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+
+        try
+        {
+            unsafe
+            {
+                byte* destPixels = (byte*)bitmapData.Scan0;
+                int bufferIndex = 0;
+
+                // Iterate over each pixel in the cursor shape
+                for (int y = 0; y < height; y++)
+                {
+                    for (int x = 0; x < width; x++)
+                    {
+                        // Extract color from the color mask
+                        byte blue = pointerShapeBuffer[bufferIndex];
+                        byte green = pointerShapeBuffer[bufferIndex + 1];
+                        byte red = pointerShapeBuffer[bufferIndex + 2];
+                        bufferIndex += 4; // Move to the next color pixel (RGBA format)
+
+                        // Extract transparency from the AND mask
+                        int maskOffset = y * pitch + (x / 8); // Each byte in the AND mask covers 8 pixels
+                        bool isTransparent = ((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1) == 0;
+
+                        // Set pixel in the bitmap
+                        int pixelIndex = (y * bitmapData.Stride) + (x * 4);
+                        destPixels[pixelIndex] = blue;
+                        destPixels[pixelIndex + 1] = green;
+                        destPixels[pixelIndex + 2] = red;
+                        destPixels[pixelIndex + 3] = isTransparent ? (byte)0 : (byte)255; // Apply transparency
+                    }
+                }
+            }
+        }
+        finally
+        {
+            // Unlock the bitmap
+            bitmap.UnlockBits(bitmapData);
+        }
 
         return bitmap;
     }
