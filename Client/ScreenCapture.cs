@@ -365,6 +365,8 @@ public class ScreenCapture
             bitmap.UnlockBits(bitmapData);
         }
 
+        bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
+
         return bitmap;
     }
 
