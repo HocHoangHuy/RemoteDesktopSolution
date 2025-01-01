@@ -55,7 +55,7 @@ public class ScreenCapture
         _screenTexture = new Texture2D(_device, textureDesc);
         duplicatedOutput = _output1.DuplicateOutput(_device);
         pointerShapeBuffer = Array.Empty<byte>();
-        while(true)
+        while (true)
         {
             if (!GetCursorPos(out pointerHotspot)) continue; else break;
         }
@@ -97,37 +97,32 @@ public class ScreenCapture
 
                 // Convert the texture to Bitmap and return it
                 Bitmap bitmap = TextureToBitmap(mapSource.DataPointer, _screenTexture.Description.Width, _screenTexture.Description.Height);
-                //// Process cursor (mouse pointer)
-                //if (duplicateFrameInformation.PointerShapeBufferSize > 0)
-                //{
-                //    pointerShapeBuffer = new byte[duplicateFrameInformation.PointerShapeBufferSize];
-                //    GCHandle handle = GCHandle.Alloc(pointerShapeBuffer, GCHandleType.Pinned);
-                //    IntPtr pointerShapeBufferRef;
-                //    try
-                //    {
-                //        // Get the pointer to the array
-                //        pointerShapeBufferRef = handle.AddrOfPinnedObject();
-                //    }
-                //    finally
-                //    {
-                //        // Free the handle when done
-                //        handle.Free();
-                //    }
-                //    OutputDuplicatePointerShapeInformation _pointerInfo;
-                //    duplicatedOutput.GetFramePointerShape(pointerShapeBuffer.Length, pointerShapeBufferRef, out int pointerShapeBufferRequired, out _pointerInfo);
-                //    pointerInfo = _pointerInfo;
-                //}
+                // Process cursor (mouse pointer)
+                if (duplicateFrameInformation.PointerShapeBufferSize > 0)
+                {
+                    pointerShapeBuffer = new byte[duplicateFrameInformation.PointerShapeBufferSize];
+                    GCHandle handle = GCHandle.Alloc(pointerShapeBuffer, GCHandleType.Pinned);
+                    IntPtr pointerShapeBufferRef;
+                    try
+                    {
+                        // Get the pointer to the array
+                        pointerShapeBufferRef = handle.AddrOfPinnedObject();
+                    }
+                    finally
+                    {
+                        // Free the handle when done
+                        handle.Free();
+                    }
+                    OutputDuplicatePointerShapeInformation _pointerInfo;
+                    duplicatedOutput.GetFramePointerShape(pointerShapeBuffer.Length, pointerShapeBufferRef, out int pointerShapeBufferRequired, out _pointerInfo);
+                    pointerInfo = _pointerInfo;
+                }
 
-                //RawPoint newCursorPos;
-                //GetCursorPos(out newCursorPos);
-
-                //if (!newCursorPos.Equals(pointerHotspot))
-                //{
-                //    pointerTopLeftPosition = duplicateFrameInformation.PointerPosition.Position;
-                //    pointerHotspot = newCursorPos;
-                //}
-                //if (pointerInfo != null)
-                //DrawCursorOnBitmap(bitmap, pointerInfo.Value, pointerTopLeftPosition, pointerShapeBuffer);
+                GetCursorPos(out pointerHotspot);
+                pointerTopLeftPosition.X = pointerHotspot.X - pointerInfo?.HotSpot.X ?? 0;
+                pointerTopLeftPosition.Y = pointerHotspot.Y - pointerInfo?.HotSpot.Y ?? 0;
+                if (pointerInfo != null)
+                    DrawCursorOnBitmap(bitmap, pointerInfo.Value, pointerTopLeftPosition, pointerShapeBuffer);
 
 
                 // Release resources
@@ -135,7 +130,7 @@ public class ScreenCapture
                 duplicatedOutput.ReleaseFrame();
                 screenResource.Dispose();
 
-                bitmap.Save("C:/Users/Admin/screen.jpg", ImageFormat.Jpeg);
+                //bitmap.Save("C:/Users/Admin/screen.jpg", ImageFormat.Jpeg);
 
                 return bitmap;  // Return the captured bitmap
 
@@ -233,90 +228,17 @@ public class ScreenCapture
                     cursorBitmap = ConvertColorPointerToBitmap(pointerShapeBuffer, cursorWidth, cursorHeight);
                     break;
                 case (int)OutputDuplicatePointerShapeType.MaskedColor:
-                    cursorBitmap = ConvertMaskedToBitmap(pointerShapeInformation, pointerShapeBuffer);
+                    cursorBitmap = ConvertMaskedToBitmap(bitmap, pointerShapeInformation, pointerShapeBuffer, cursorTopLeftPosition);
                     break;
                 default: return;
             }
 
             graphics.DrawImage(cursorBitmap, cursorTopLeftPosition.X, cursorTopLeftPosition.Y);
-            bitmap.Save("C:\\Users\\satos\\screen.jpg", ImageFormat.Jpeg);
+            //cursorBitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
         }
     }
 
-    //private Bitmap ConvertMaskedToBitmap(byte[] buffer, int width, int height)
-    //{
-    //    // Create a bitmap to hold the final result
-    //    Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
-
-    //    // Step 1: Create a graphics object to manipulate the bitmap
-    //    using (Graphics g = Graphics.FromImage(bitmap))
-    //    {
-    //        // Clear the bitmap with a transparent color
-    //        g.Clear(System.Drawing.Color.Transparent);
-
-    //        // Step 2: Extract AND mask (binary) and XOR mask (color)
-    //        // Assuming buffer contains the combined AND and XOR mask data
-    //        int andMaskSize = (width * height + 7) / 8; // Size of the AND mask
-    //        int xorMaskSize = (width * height * 4); // Size of the XOR mask (32-bit color for each pixel)
-
-    //        if (andMaskSize + xorMaskSize != buffer.Length)
-    //        {
-    //            var adjustedSize = AdjustDimensionsToFitBufferSize(buffer.Length);
-    //            width = adjustedSize.width;
-    //            height = adjustedSize.height;
-    //            andMaskSize = (width * height + 7) / 8;
-    //            xorMaskSize = (width * height * 4);
-    //        }
-
-    //        byte[] andMask = new byte[andMaskSize];
-    //        byte[] xorMask = new byte[xorMaskSize];
-
-    //        // Copy the AND and XOR mask data from the buffer
-    //        Array.Copy(buffer, 0, andMask, 0, andMaskSize);      // First part is the AND mask
-    //        Array.Copy(buffer, andMaskSize, xorMask, 0, xorMaskSize);  // Next part is the XOR mask
-
-    //        // Step 3: Process the AND mask and XOR mask to create the final bitmap
-    //        BitmapData lockedBits = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
-    //        int byteIndex = 0;
-    //        for (int y = 0; y < height; y++)
-    //        {
-    //            for (int x = 0; x < width; x++)
-    //            {
-    //                // Get the corresponding bit in the AND mask
-    //                int bitIndex = (y * width) + x;
-    //                int bytePos = bitIndex / 8;
-    //                int bitPos = bitIndex % 8;
-    //                bool isOpaque = (andMask[bytePos] & (1 << (7 - bitPos))) != 0;
-
-    //                // Get the corresponding color in the XOR mask (ARGB)
-    //                int colorPos = (y * width + x) * 4;
-    //                byte blue = xorMask[colorPos];
-    //                byte green = xorMask[colorPos + 1];
-    //                byte red = xorMask[colorPos + 2];
-    //                byte alpha = xorMask[colorPos + 3];
-
-    //                // If the AND mask indicates the cursor is visible, use the XOR mask for color
-    //                if (isOpaque)
-    //                {
-    //                    System.Drawing.Color color = System.Drawing.Color.FromArgb(alpha, red, green, blue);
-    //                    bitmap.SetPixel(x, y, color);
-    //                }
-    //                else
-    //                {
-    //                    // The pixel is transparent (due to AND mask), set to transparent
-    //                    bitmap.SetPixel(x, y, System.Drawing.Color.Transparent);
-    //                }
-    //            }
-    //        }
-    //        bitmap.UnlockBits(lockedBits);
-    //    }
-
-    //    bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
-
-    //    return bitmap;
-    //}
-
-    public Bitmap ConvertMaskedToBitmap(OutputDuplicatePointerShapeInformation pointerShapeInfo, byte[] pointerShapeBuffer)
+    public Bitmap ConvertMaskedToBitmap(Bitmap screenBitmap, OutputDuplicatePointerShapeInformation pointerShapeInfo, byte[] pointerShapeBuffer, RawPoint cursorTopLeftPosition)
     {
         int width = pointerShapeInfo.Width;
         int height = pointerShapeInfo.Height;
@@ -348,10 +270,25 @@ public class ScreenCapture
 
                         // Extract transparency from the AND mask
                         int maskOffset = y * pitch + (x / 8); // Each byte in the AND mask covers 8 pixels
-                        bool isTransparent = ((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1) == 0;
+                        byte alpha = (byte)(((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1));
+                        bool isTransparent = alpha == 0xFF;
 
                         // Set pixel in the bitmap
-                        bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1), red, green, blue));
+                        System.Drawing.Color color;
+                        if (isTransparent)
+                        {
+                            System.Drawing.Color screenPixelColor = screenBitmap.GetPixel(cursorTopLeftPosition.X + x, cursorTopLeftPosition.Y + y);
+                            color = System.Drawing.Color.FromArgb(255, screenPixelColor.R ^ red, screenPixelColor.G ^ green, screenPixelColor.B ^ blue);
+                        }
+                        else
+                        {
+                            if ((blue + green + red) == 0)
+                                color = System.Drawing.Color.Transparent;
+                            else
+                                color = System.Drawing.Color.FromArgb(255, red, green, blue);
+                        }
+
+                        bitmap.SetPixel(x, y, color);
                         //int pixelIndex = (y * bitmapData.Stride) + (x * 4);
                         //destPixels[pixelIndex] = blue;
                         //destPixels[pixelIndex + 1] = green;
