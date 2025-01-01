@@ -247,94 +247,40 @@ public class ScreenCapture
         // Create a bitmap to store the cursor
         Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
-        // Lock the bitmap for fast pixel manipulation
-        //BitmapData bitmapData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
-
-        try
+        // Iterate over each pixel in the cursor shape
+        for (int y = 0; y < height; y++)
         {
-            //unsafe
+            for (int x = 0; x < width; x++)
             {
-                //byte* destPixels = (byte*)bitmapData.Scan0;
-                int bufferIndex = 0;
+                int index = y * pitch + (x * 4);
+                byte blue = pointerShapeBuffer[index];
+                byte green = pointerShapeBuffer[index + 1];
+                byte red = pointerShapeBuffer[index + 2];
+                byte alpha = pointerShapeBuffer[index + 3];
 
-                // Iterate over each pixel in the cursor shape
-                for (int y = 0; y < height; y++)
+                bool isTransparent = alpha == 0xFF;
+
+                // Set pixel in the bitmap
+                System.Drawing.Color color;
+                if (isTransparent)
                 {
-                    for (int x = 0; x < width; x++)
-                    {
-                        // Extract color from the color mask
-                        byte blue = pointerShapeBuffer[bufferIndex];
-                        byte green = pointerShapeBuffer[bufferIndex + 1];
-                        byte red = pointerShapeBuffer[bufferIndex + 2];
-                        bufferIndex += 4; // Move to the next color pixel (RGBA format)
-
-                        // Extract transparency from the AND mask
-                        int maskOffset = y * pitch + (x / 8); // Each byte in the AND mask covers 8 pixels
-                        byte alpha = (byte)(((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1));
-                        bool isTransparent = alpha == 0xFF;
-
-                        // Set pixel in the bitmap
-                        System.Drawing.Color color;
-                        if (isTransparent)
-                        {
-                            System.Drawing.Color screenPixelColor = screenBitmap.GetPixel(cursorTopLeftPosition.X + x, cursorTopLeftPosition.Y + y);
-                            color = System.Drawing.Color.FromArgb(255, screenPixelColor.R ^ red, screenPixelColor.G ^ green, screenPixelColor.B ^ blue);
-                        }
-                        else
-                        {
-                            if ((blue + green + red) == 0)
-                                color = System.Drawing.Color.Transparent;
-                            else
-                                color = System.Drawing.Color.FromArgb(255, red, green, blue);
-                        }
-
-                        bitmap.SetPixel(x, y, color);
-                        //int pixelIndex = (y * bitmapData.Stride) + (x * 4);
-                        //destPixels[pixelIndex] = blue;
-                        //destPixels[pixelIndex + 1] = green;
-                        //destPixels[pixelIndex + 2] = red;
-                        //destPixels[pixelIndex + 3] = isTransparent ? (byte)0 : (byte)255; // Apply transparency
-                    }
+                    System.Drawing.Color screenPixelColor = screenBitmap.GetPixel(cursorTopLeftPosition.X + x, cursorTopLeftPosition.Y + y);
+                    color = System.Drawing.Color.FromArgb(255, screenPixelColor.R ^ red, screenPixelColor.G ^ green, screenPixelColor.B ^ blue);
                 }
+                else
+                {
+                    if ((blue + green + red) == 0)
+                        color = System.Drawing.Color.FromArgb(0, 0, 0, 0);
+                    else
+                        color = System.Drawing.Color.FromArgb(255, red, green, blue);
+                }
+
+                bitmap.SetPixel(x, y, color);
             }
         }
-        finally
-        {
-            // Unlock the bitmap
-            //bitmap.UnlockBits(bitmapData);
-        }
-
-        //bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
 
         return bitmap;
     }
-
-
-    //public (int width, int height) AdjustDimensionsToFitBufferSize(int bufferSize)
-    //{
-    //    // Try different potential widths and heights
-    //    for (int width = 1; width <= 256; width++) // Adjust the range based on expected cursor size
-    //    {
-    //        for (int height = 1; height <= 256; height++)
-    //        {
-    //            // Calculate the size of the AND and XOR masks
-    //            int andMaskSize = (width * height + 7) / 8;  // AND mask size in bytes
-    //            int xorMaskSize = width * height * 4;        // XOR mask size in bytes (32-bit ARGB)
-
-    //            // Total buffer size
-    //            int totalSize = andMaskSize + xorMaskSize;
-
-    //            // If the total buffer size matches the provided buffer size, return the dimensions
-    //            if (totalSize == bufferSize)
-    //            {
-    //                return (width, height); // Found matching width and height
-    //            }
-    //        }
-    //    }
-
-    //    // If no matching dimensions are found, return an indication (e.g., -1 for width and height)
-    //    return (-1, -1); // Return an invalid dimension pair if no match is found
-    //}
 }
 
 

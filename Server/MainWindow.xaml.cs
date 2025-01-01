@@ -30,15 +30,15 @@ namespace Server
         public MainWindow()
         {
             InitializeComponent();
-            //this.Loaded += (s, e) => { StartReceiving(); };
-            //mouse = new("192.168.201.10", 8889);
-            image_Screen.MouseMove -= image_Screen_MouseMove;
-            image_Screen.MouseWheel -= image_Screen_MouseWheel;
-            image_Screen.MouseLeftButtonDown -= image_Screen_MouseLeftButtonDown;
-            image_Screen.MouseLeftButtonUp -= image_Screen_MouseLeftButtonUp;
-            image_Screen.MouseRightButtonDown -= image_Screen_MouseRightButtonDown;
-            image_Screen.MouseRightButtonUp -= image_Screen_MouseRightButtonUp;
-            this.Loaded += (s, e) => { StartCaptureScreen(); };
+            this.Loaded += (s, e) => { StartReceiving(); };
+            mouse = new("192.168.201.10", 8889);
+            //image_Screen.MouseMove -= image_Screen_MouseMove;
+            //image_Screen.MouseWheel -= image_Screen_MouseWheel;
+            //image_Screen.MouseLeftButtonDown -= image_Screen_MouseLeftButtonDown;
+            //image_Screen.MouseLeftButtonUp -= image_Screen_MouseLeftButtonUp;
+            //image_Screen.MouseRightButtonDown -= image_Screen_MouseRightButtonDown;
+            //image_Screen.MouseRightButtonUp -= image_Screen_MouseRightButtonUp;
+            //this.Loaded += (s, e) => { StartCaptureScreen(); };
             //ScreenStateLogger screenStateLogger = new();
             //screenStateLogger.ScreenRefreshed += (s, e) => { image_Screen.Dispatcher.Invoke(() => ChangeSource(e)); };
             //screenStateLogger.Start();
