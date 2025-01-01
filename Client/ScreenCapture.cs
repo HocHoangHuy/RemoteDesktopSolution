@@ -239,6 +239,7 @@ public class ScreenCapture
             }
 
             graphics.DrawImage(cursorBitmap, cursorTopLeftPosition.X, cursorTopLeftPosition.Y);
+            bitmap.Save("C:\\Users\\satos\\screen.jpg", ImageFormat.Jpeg);
         }
     }
 
@@ -325,13 +326,13 @@ public class ScreenCapture
         Bitmap bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
 
         // Lock the bitmap for fast pixel manipulation
-        BitmapData bitmapData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
+        //BitmapData bitmapData = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, width, height), ImageLockMode.WriteOnly, PixelFormat.Format32bppArgb);
 
         try
         {
-            unsafe
+            //unsafe
             {
-                byte* destPixels = (byte*)bitmapData.Scan0;
+                //byte* destPixels = (byte*)bitmapData.Scan0;
                 int bufferIndex = 0;
 
                 // Iterate over each pixel in the cursor shape
@@ -350,11 +351,12 @@ public class ScreenCapture
                         bool isTransparent = ((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1) == 0;
 
                         // Set pixel in the bitmap
-                        int pixelIndex = (y * bitmapData.Stride) + (x * 4);
-                        destPixels[pixelIndex] = blue;
-                        destPixels[pixelIndex + 1] = green;
-                        destPixels[pixelIndex + 2] = red;
-                        destPixels[pixelIndex + 3] = isTransparent ? (byte)0 : (byte)255; // Apply transparency
+                        bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(((pointerShapeBuffer[maskOffset] >> (7 - (x % 8))) & 1), red, green, blue));
+                        //int pixelIndex = (y * bitmapData.Stride) + (x * 4);
+                        //destPixels[pixelIndex] = blue;
+                        //destPixels[pixelIndex + 1] = green;
+                        //destPixels[pixelIndex + 2] = red;
+                        //destPixels[pixelIndex + 3] = isTransparent ? (byte)0 : (byte)255; // Apply transparency
                     }
                 }
             }
@@ -362,7 +364,7 @@ public class ScreenCapture
         finally
         {
             // Unlock the bitmap
-            bitmap.UnlockBits(bitmapData);
+            //bitmap.UnlockBits(bitmapData);
         }
 
         bitmap.Save("C:\\Users\\satos\\cursor.jpg", ImageFormat.Jpeg);
